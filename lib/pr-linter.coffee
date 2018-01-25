@@ -4,6 +4,8 @@ path = require 'path'
 _ = require 'underscore-plus'
 ultramarked = require 'ultramarked'
 linkify = require 'gfm-linkify'
+relativeDate = require 'relative-date'
+marked = require('marked');
 
 ghClient = require './gh-client'
 {getRepoInfo} = require './helpers'
@@ -151,13 +153,32 @@ module.exports = new class # This only needs to be a class to bind lint()
           text = outOfDateText + [commentsOnLine[commentsOnLine.length - 1]].map(({user, body}) =>
             "[#{user.login}]: #{body}"
           ).join('\n\n')
-          markup = outOfDateText + commentsOnLine.map(({user, htmlUrl, body}) =>
-            "[#{user.login}](#{htmlUrl}): #{body}"
-          ).join('\n\n')
-          context = ghClient.repoOwner + '/' + ghClient.repoName
-          markupStripped = markup.replace(/<!--[\s\S]*?-->/g, '')
-          # textEmojis = this.replaceEmojis(textStripped)
-          markup = linkify(markupStripped, context)
+
+          markup = commentsOnLine.map(({user, htmlUrl, body, createdAt}) =>
+            context = ghClient.repoOwner + '/' + ghClient.repoName
+            body = body.replace(/<!--[\s\S]*?-->/g, '')
+            body = linkify(body, context)
+            body = marked(body, {
+              gfm: true,
+              tables: true,
+              breaks: false,
+              pedantic: false,
+              sanitize: false,
+              smartLists: true,
+              smartypants: false
+            })
+            # textEmojis = this.replaceEmojis(textStripped)
+
+            """
+            <div class="linter-pull-request-comment-byline">
+              [#{user.login}](#{user.htmlUrl})
+              commented
+              <a class="timestamp" href="#{htmlUrl}">#{relativeDate(createdAt)}</a>
+            </div>
+            <div class="linter-pull-request-comment-body">#{body}</div>
+            """
+          ).join('')
+          markup = '<div class="linter-pull-request-comment">' + outOfDateText + markup + '</div>'
 
           icon = if commentsOnLine.length is 1
             'comment'
