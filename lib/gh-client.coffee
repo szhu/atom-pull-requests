@@ -215,11 +215,11 @@ module.exports = new class GitHubClient
               # yield [] so consumers still run
               return []
           catch error
-            console.error(error)
-
-          atom.notifications.addError 'Error fetching Pull Request data from GitHub',
+            atom.notifications.addError 'Error fetching Pull Request data from GitHub',
             dismissable: true
             detail: """Make sure you are connected to the internet. If this is a private repository then you will need to create a token from https://github.com/settings/tokens and add it to your system keychain with service name "#{KEYTAR_SERVICE_NAME}" and account name "#{KEYTAR_ACCOUNT_NAME}"."""
+            throw error
+
 
           # tokenDialog = new Dialog({
           #   defaultValue: keytar.getPassword(KEYTAR_SERVICE_NAME, KEYTAR_ACCOUNT_NAME)
